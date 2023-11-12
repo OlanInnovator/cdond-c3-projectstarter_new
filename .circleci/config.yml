@@ -430,33 +430,33 @@ jobs:
       - destroy-environment
       - revert-migrations
 
-cleanup:
-    docker:
-      # Docker image here
-    steps:
-      # Checkout code from git
-      - run:
-          name: Get old stack workflow id
-          command: |
+  cleanup:
+      docker:
+        # Docker image here
+      steps:
+        # Checkout code from git
+        - run:
+            name: Get old stack workflow id
+            command: |
             # your code here
             export OldWorkflowID="the id here"
             export STACKS=[] #put the list of stacks here
-      - run:
-          name: Remove old stacks and files
-          command: |
-            for OldWorkflowID in "${STACKS[@]}"; do
-              echo OldWorkflowID is "${OldWorkflowID}"
-              if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-              then
-                echo ------ Cleaning up old jobs ------
-                aws s3 rm "s3://${oldWorkFlowID}" --recursive
-                aws cloudformation delete-stack --stack-name "${oldWorkFlowID}"
-                # aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkFlowID}"
-                # aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkFlowID}"
-              else
-                echo ------ Nothing to cleanup - "Current: $OldWorkflowID" ------
-              fi
-            done
+        - run:
+            name: Remove old stacks and files
+            command: |
+              for OldWorkflowID in "${STACKS[@]}"; do
+                echo OldWorkflowID is "${OldWorkflowID}"
+                if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+                then
+                  echo ------ Cleaning up old jobs ------
+                  aws s3 rm "s3://${oldWorkFlowID}" --recursive
+                  aws cloudformation delete-stack --stack-name "${oldWorkFlowID}"
+                  # aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkFlowID}"
+                  # aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkFlowID}"
+                else
+                  echo ------ Nothing to cleanup - "Current: $OldWorkflowID" ------
+                fi
+              done
             
 
 workflows:
@@ -489,5 +489,5 @@ workflows:
           requires: [deploy-backend, deploy-frontend]
       - cloudfront-update:
           requires: [smoke-test]
-    cleanup:
-      requires: [cloudfront-update]
+      - cleanup:
+          requires: [cloudfront-update]
