@@ -1,0 +1,60 @@
+---
+# Exercise for setting up a web server in an EC
+#- name: Exercise for setting up a web server in an EC   
+  # Use the public IP if the VM is already created
+#- hosts: web
+#  tasks:
+  # For Ubuntu instances, the user will be `ubuntu`
+  # For Amazon LInux 2 instance, the user will be `ec2-user
+#  user: ubuntu
+#  become: true
+#  gather_facts: false
+#  vars:
+#    - ansible_python_interpreter: /usr/bin/python3
+#    - ansible_host_key_checking: false
+#    - ansible_stdout_callback: yaml
+
+- name: "Update apt packages"
+  become: true
+  apt:
+    update_cache: yes
+
+- name: "Upgrade apt packages"
+  become: true
+  apt:
+    upgrade: yes
+
+- name: "Remove dependencies that are no longer required"
+  become: true
+  apt:
+    autoremove: yes
+
+- name: "install dependencies."
+  become: true
+  apt:
+    name: ["nodejs", "npm"]
+    state: latest
+    update_cache: yes
+
+- name: "install pm2"
+  become: true
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present   
+
+- name: "exporting env variables"
+  become: true
+  shell:  |    
+    touch /etc/profile.d/env.sh
+    echo export TYPEORM_HOST=$TYPTYPEORM_HOST >> /etc/profile.d/env.sh
+    echo export TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> /etc/profile.d/env.sh
+    echo export TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> /etc/profile.d/env.sh
+    echo export TYPEORM_HOST=$TYPEORM_HOST >> /etc/profile.d/env.sh
+    echo export TYPEORM_PORT=$TYPEORM_PORT >> /etc/profile.d/env.sh
+    echo export TYPEORM_USERNAME=$TYPEORM_USERNAME >> /etc/profile.d/env.sh
+    echo export TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> /etc/profile.d/env.sh
+    echo export TYPEORM_DATABASE=$TYPEORM_DATABASE >> /etc/profile.d/env.sh
+    echo export TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> /etc/profile.d/env.sh
+    echo export TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> /etc/profile.d/env.sh   
