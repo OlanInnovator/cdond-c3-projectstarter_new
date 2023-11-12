@@ -3,28 +3,8 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.10.1
   aws-cli: circleci/aws-cli@3.1
-
+  
 commands:
-  revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
-    parameters:
-      workflow_id:
-        default: "${CIRCLE_WORKFLOW_ID:0:7}"
-        type: string    
-    steps:
-      - run:
-          name: Revert migrations
-          when: on_fail
-          command: |
-            SUCCESS=1
-            echo "$SUCCESS"
-            if [[ "${SUCCESS}" == "1" ]];
-            then
-              cd ~/project/backend
-              npm install
-              npm run migrations:revert
-            fi
-
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
@@ -32,24 +12,18 @@ commands:
       Workflow_ID:
         type: string
         default: ${CIRCLE_WORKFLOW_ID:0:7}
+    #  when_to_run:
+     #   type: string
+     #   default: "on_fail"  
     steps:
       - run:
-          name: Destroy environment
+          name: Destroy environments
           when: on_fail
           command: |
-            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
-            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}           
-  
-  install_awscli:
-    description: Install AWS CLI v2
-    steps:
-      - run:
-          name: Install AWS CLI v2
-          command: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
+            echo "Destroying environment: << parameters.Workflow_ID >> "
+            aws --region us-west-1 s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
+            aws --region us-west-1 cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
+            aws --region us-west-1 cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
 
   install_ansible:
     description: Install Ansible
@@ -61,6 +35,27 @@ commands:
             sudo apt install software-properties-common -y
             sudo add-apt-repository --yes --update ppa:ansible/ansible
             sudo apt install ansible -y
+  
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      Workflow_ID:
+        type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}    
+    steps:
+      - run:
+          name: Revert migrations
+          when: on_fail
+          command: |
+              SUCCESS=$(curl --insecure  https://kvdb.io/${KVDB_BUCKET_ID}/migration_<< parameters.Workflow_ID >>)
+              # Logic for reverting the database state
+              if (( $SUCCESS == 1 ));
+              then
+                cd ~/project/backend
+                npm install
+                npm run migration:revert
+              fi
+              
 
 jobs:
   build-frontend:
@@ -431,32 +426,34 @@ jobs:
       - revert-migrations
 
   cleanup:
-    docker:
-        # Docker image here
-    steps:
-     # Checkout code from git
+     docker:
+       - image: amazon/aws-cli
+     steps:
+      - checkout
       - run:
-          name: Get old stack workflow id
-          command: |
-           # your code here
-            export OldWorkflowID="the id here"
-            export STACKS=[] #put the list of stacks here
-      - run:
-          name: Remove old stacks and files
-          command: |
-            for OldWorkflowID in "${STACKS[@]}"; do
-            echo OldWorkflowID is "${OldWorkflowID}"
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-            then
-              echo ------ Cleaning up old jobs ------
-              aws s3 rm "s3://${oldWorkFlowID}" --recursive
-              aws cloudformation delete-stack --stack-name "${oldWorkFlowID}"
-              # aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkFlowID}"
-              # aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkFlowID}"
-            else
-              echo ------ Nothing to cleanup - "Current: $OldWorkflowID" ------
-            fi
-            done        
+           name: Get old stack workflow id & Remove old stack and files
+           command: |
+             export OldWorkflowID=$(aws cloudformation \
+                   list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+                   --no-paginate --output text)
+             echo OldWorkflowID: "${OldWorkflowID}"
+             echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
+              # Fetch the stack names         
+             export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                   --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+               echo Stack names: "${STACKS[@]}"
+              for OldWorkflowID in "${STACKS[@]}"; do
+              if [[ "${CIRCLE_WORKFLOW_ID:0:7}" =~ $OldWorkflowID ]]
+              then
+                echo ------ Cleaning up old jobs ------
+                aws s3 rm "s3://${oldWorkFlowID}" --recursive
+                aws cloudformation delete-stack --stack-name "${oldWorkFlowID}"
+                # aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkFlowID}"
+                # aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkFlowID}"
+              else
+                 echo ------ Nothing to cleanup - "Current: $OldWorkflowID" ------
+              fi
+              done
 
 workflows:
   default:
@@ -468,14 +465,14 @@ workflows:
       - test-backend:
           requires: [build-backend]
       - scan-backend:
-          requires: [build-backend]
+         requires: [build-backend]
       - scan-frontend:
-          requires: [build-frontend]
+         requires: [build-frontend] 
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
-              only: [dev_UdaPeople_Project]
+              only: [Dev-Feature-Branch]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
       - run-migrations:
@@ -485,8 +482,8 @@ workflows:
       - deploy-backend:
           requires: [run-migrations]
       - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
+          requires: [deploy-frontend, deploy-backend] 
       - cloudfront-update:
-          requires: [smoke-test]
+          requires: [smoke-test]  
       - cleanup:
-          requires: [cloudfront-update]
+          requires: [cloudfront-update]          
