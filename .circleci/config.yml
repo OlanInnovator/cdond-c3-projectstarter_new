@@ -85,11 +85,11 @@ jobs:
           name: Back-end build
           command: |
             cd backend 
-            npm install
-            npm fund
-            npm audit fix
-            npm -g install typescript
-            npm run build
+            sudo npm install
+            sudo npm fund
+            sudo npm audit fix
+            sudo npm -g install typescript
+            sudo npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
