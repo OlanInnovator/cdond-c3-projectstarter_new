@@ -85,9 +85,10 @@ jobs:
           name: Back-end build
           command: |
             cd backend 
-            sudo npm install
-            sudo npm audit fix
-            sudo npm run build
+            npm install
+            npm audit fix
+            npm install webpack-node-externals
+            npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
