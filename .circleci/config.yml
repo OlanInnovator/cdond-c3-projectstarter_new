@@ -86,7 +86,6 @@ jobs:
           command: |
             cd backend 
             sudo npm install
-            sudo npm i webpack-node-externals
             sudo npm run build
       - save_cache:
           paths: [backend/node_modules]
