@@ -85,9 +85,9 @@ jobs:
           name: Back-end build
           command: |
             cd backend 
-            npm install
-            npm i webpack-node-externals
-            npm run build
+            supo npm install
+            supo npm i webpack-node-externals
+            supo npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
