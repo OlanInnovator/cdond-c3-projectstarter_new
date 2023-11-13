@@ -87,7 +87,7 @@ jobs:
             cd backend 
             npm install
             npm audit fix
-            npm install webpack-node-externals
+            npm i webpack-node-externals
             npm run build
       - save_cache:
           paths: [backend/node_modules]
