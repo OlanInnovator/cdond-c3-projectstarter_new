@@ -86,7 +86,6 @@ jobs:
           command: |
             cd backend 
             npm install
-            npm audit fix
             npm i webpack-node-externals
             npm run build
       - save_cache:
