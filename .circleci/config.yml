@@ -259,6 +259,7 @@ jobs:
             command: |
               cd backend
               npm install
+              npm run typeorm schema:drop
               npm fund
               npm audit fix
               npm run migrations > migrations_dump.txt
