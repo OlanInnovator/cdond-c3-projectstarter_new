@@ -1,4 +1,3 @@
-import '@types/jest';
 import { EmployeeRepository } from '../../repositories/employees.repository';
 import { EmployeeEffectiveDateUpdater } from './employee-effective-date-updater.handler';
 import { UpdateEmployeeEffectiveDate } from '../update-employee-effective-date.command';

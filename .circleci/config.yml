@@ -86,6 +86,9 @@ jobs:
           command: |
             cd backend 
             sudo npm install
+            sudo npm fund
+            sudo npm audit fix
+            sudo npm -g install typescript
             sudo npm run build
       - save_cache:
           paths: [backend/node_modules]
@@ -473,7 +476,7 @@ workflows:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
-              only: [dev_UdaPeople_Project]
+              only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
       - run-migrations:
